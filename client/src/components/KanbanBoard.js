@@ -44,8 +44,15 @@ const KanbanBoard = () => {
       setLists(response.data);
       setError(null);
     } catch (err) {
-      setError('Failed to load board data. Please check your connection and try again.');
       console.error('Error fetching lists:', err);
+      
+      if (err.code === 'ERR_NETWORK' || err.message.includes('Network Error')) {
+        setError('Cannot connect to server. Please ensure the backend server is running on port 5000.');
+      } else if (err.response?.status >= 500) {
+        setError('Server error. Please check the server configuration and database connection.');
+      } else {
+        setError('Failed to load board data. Please check your connection and try again.');
+      }
     } finally {
       setLoading(false);
     }
