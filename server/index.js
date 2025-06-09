@@ -6,7 +6,7 @@ const listRoutes = require('./routes/lists');
 const cardRoutes = require('./routes/cards');
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5001;
 
 app.use(cors());
 app.use(express.json());
