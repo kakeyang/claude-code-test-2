@@ -1,18 +1,26 @@
 const express = require('express');
 const { v4: uuidv4 } = require('uuid');
-const pool = require('../config/database');
+const supabase = require('../config/supabase');
 
 const router = express.Router();
 
 router.get('/', async (req, res) => {
   try {
-    const [lists] = await pool.execute('SELECT * FROM lists ORDER BY position');
+    const { data: lists, error: listsError } = await supabase
+      .from('lists')
+      .select('*')
+      .order('position');
+    
+    if (listsError) throw listsError;
     
     const listsWithCards = await Promise.all(lists.map(async (list) => {
-      const [cards] = await pool.execute(
-        'SELECT * FROM cards WHERE list_id = ? ORDER BY position',
-        [list.id]
-      );
+      const { data: cards, error: cardsError } = await supabase
+        .from('cards')
+        .select('*')
+        .eq('list_id', list.id)
+        .order('position');
+      
+      if (cardsError) throw cardsError;
       return { ...list, cards };
     }));
 
@@ -26,18 +34,27 @@ router.get('/', async (req, res) => {
 router.post('/', async (req, res) => {
   try {
     const { title } = req.body;
-    const id = uuidv4();
     
-    const [maxPosition] = await pool.execute('SELECT MAX(position) as maxPos FROM lists');
-    const position = (maxPosition[0].maxPos || -1) + 1;
+    // Get the maximum position
+    const { data: maxPositionData, error: maxPosError } = await supabase
+      .from('lists')
+      .select('position')
+      .order('position', { ascending: false })
+      .limit(1);
+    
+    if (maxPosError) throw maxPosError;
+    
+    const position = (maxPositionData[0]?.position || -1) + 1;
 
-    await pool.execute(
-      'INSERT INTO lists (id, title, position) VALUES (?, ?, ?)',
-      [id, title, position]
-    );
+    const { data: newList, error: insertError } = await supabase
+      .from('lists')
+      .insert([{ title, position }])
+      .select()
+      .single();
+    
+    if (insertError) throw insertError;
 
-    const [newList] = await pool.execute('SELECT * FROM lists WHERE id = ?', [id]);
-    res.status(201).json({ ...newList[0], cards: [] });
+    res.status(201).json({ ...newList, cards: [] });
   } catch (error) {
     console.error('Error creating list:', error);
     res.status(500).json({ error: 'Failed to create list' });
@@ -49,14 +66,21 @@ router.put('/:id', async (req, res) => {
     const { id } = req.params;
     const { title } = req.body;
 
-    await pool.execute('UPDATE lists SET title = ? WHERE id = ?', [title, id]);
+    const { data: updatedList, error: updateError } = await supabase
+      .from('lists')
+      .update({ title })
+      .eq('id', id)
+      .select()
+      .single();
     
-    const [updatedList] = await pool.execute('SELECT * FROM lists WHERE id = ?', [id]);
-    if (updatedList.length === 0) {
-      return res.status(404).json({ error: 'List not found' });
+    if (updateError) {
+      if (updateError.code === 'PGRST116') {
+        return res.status(404).json({ error: 'List not found' });
+      }
+      throw updateError;
     }
 
-    res.json(updatedList[0]);
+    res.json(updatedList);
   } catch (error) {
     console.error('Error updating list:', error);
     res.status(500).json({ error: 'Failed to update list' });
@@ -67,7 +91,13 @@ router.delete('/:id', async (req, res) => {
   try {
     const { id } = req.params;
     
-    await pool.execute('DELETE FROM lists WHERE id = ?', [id]);
+    const { error: deleteError } = await supabase
+      .from('lists')
+      .delete()
+      .eq('id', id);
+    
+    if (deleteError) throw deleteError;
+    
     res.status(204).send();
   } catch (error) {
     console.error('Error deleting list:', error);

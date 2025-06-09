@@ -1,6 +1,6 @@
 # Trello Clone - Modern Kanban Board
 
-A modern, responsive Trello clone built with React, Node.js, and MySQL. Features drag-and-drop functionality, real-time updates, and a clean, intuitive interface.
+A modern, responsive Trello clone built with React, Node.js, and Supabase. Features drag-and-drop functionality, real-time updates, and a clean, intuitive interface.
 
 ## Features
 
@@ -9,7 +9,7 @@ A modern, responsive Trello clone built with React, Node.js, and MySQL. Features
 - **Drag & Drop**: Intuitive drag-and-drop interface using react-beautiful-dnd
 - **Card Details**: Support for titles, descriptions, labels, and due dates
 - **Modern Design**: Clean, responsive UI with glassmorphism effects
-- **Real-time Updates**: Asynchronous data persistence with MySQL
+- **Real-time Updates**: Asynchronous data persistence with Supabase
 
 ## Tech Stack
 
@@ -22,11 +22,11 @@ A modern, responsive Trello clone built with React, Node.js, and MySQL. Features
 ### Backend
 - Node.js
 - Express.js
-- MySQL2
+- Supabase Client
 - CORS support
 
 ### Database
-- MySQL with JSON support for labels
+- Supabase (PostgreSQL) with JSONB support for labels
 
 ## Project Structure
 
@@ -51,28 +51,24 @@ trello-clone/
 
 ### Prerequisites
 - Node.js (v14 or higher)
-- MySQL (v8 or higher)
+- Supabase account
 - npm or yarn
 
 ### Database Setup
 
-1. Create a MySQL database:
-```sql
-CREATE DATABASE trello_clone;
-```
+1. Create a new Supabase project at [supabase.com](https://supabase.com)
 
-2. Import the schema:
+2. Run the migration script in your Supabase SQL editor:
 ```bash
-mysql -u root -p trello_clone < server/database.sql
+# Copy and paste the contents of server/supabase-migration.sql 
+# into your Supabase SQL editor and execute
 ```
 
 3. Update database credentials in `server/.env`:
 ```env
 PORT=5000
-DB_HOST=localhost
-DB_USER=your_username
-DB_PASSWORD=your_password
-DB_NAME=trello_clone
+SUPABASE_URL=your_supabase_project_url
+SUPABASE_ANON_KEY=your_supabase_anon_key
 ```
 
 ### Installation
@@ -128,20 +124,20 @@ cd client && npm start
 ## Data Model
 
 ### Lists Table
-- `id` (VARCHAR): Unique identifier
+- `id` (UUID): Unique identifier (auto-generated)
 - `title` (VARCHAR): List title
-- `position` (INT): Display order
-- `created_at`, `updated_at` (TIMESTAMP)
+- `position` (INTEGER): Display order
+- `created_at`, `updated_at` (TIMESTAMP WITH TIME ZONE)
 
 ### Cards Table
-- `id` (VARCHAR): Unique identifier
+- `id` (UUID): Unique identifier (auto-generated)
 - `title` (VARCHAR): Card title
 - `description` (TEXT): Card description
-- `list_id` (VARCHAR): Foreign key to lists
-- `position` (INT): Position within list
-- `labels` (JSON): Array of label strings
+- `list_id` (UUID): Foreign key to lists
+- `position` (INTEGER): Position within list
+- `labels` (JSONB): Array of label strings
 - `due_date` (DATE): Optional due date
-- `created_at`, `updated_at` (TIMESTAMP)
+- `created_at`, `updated_at` (TIMESTAMP WITH TIME ZONE)
 
 ## Contributing
 
