@@ -1,27 +1,41 @@
 const express = require('express');
 const { v4: uuidv4 } = require('uuid');
-const pool = require('../config/database');
+const supabase = require('../config/supabase');
 
 const router = express.Router();
 
 router.post('/', async (req, res) => {
   try {
     const { title, description, list_id, labels, due_date } = req.body;
-    const id = uuidv4();
     
-    const [maxPosition] = await pool.execute(
-      'SELECT MAX(position) as maxPos FROM cards WHERE list_id = ?',
-      [list_id]
-    );
-    const position = (maxPosition[0].maxPos || -1) + 1;
+    // Get the maximum position for cards in this list
+    const { data: maxPositionData, error: maxPosError } = await supabase
+      .from('cards')
+      .select('position')
+      .eq('list_id', list_id)
+      .order('position', { ascending: false })
+      .limit(1);
+    
+    if (maxPosError) throw maxPosError;
+    
+    const position = (maxPositionData[0]?.position || -1) + 1;
 
-    await pool.execute(
-      'INSERT INTO cards (id, title, description, list_id, position, labels, due_date) VALUES (?, ?, ?, ?, ?, ?, ?)',
-      [id, title, description, list_id, position, JSON.stringify(labels || []), due_date]
-    );
+    const { data: newCard, error: insertError } = await supabase
+      .from('cards')
+      .insert([{
+        title,
+        description,
+        list_id,
+        position,
+        labels: labels || [],
+        due_date
+      }])
+      .select()
+      .single();
+    
+    if (insertError) throw insertError;
 
-    const [newCard] = await pool.execute('SELECT * FROM cards WHERE id = ?', [id]);
-    res.status(201).json(newCard[0]);
+    res.status(201).json(newCard);
   } catch (error) {
     console.error('Error creating card:', error);
     res.status(500).json({ error: 'Failed to create card' });
@@ -33,17 +47,26 @@ router.put('/:id', async (req, res) => {
     const { id } = req.params;
     const { title, description, labels, due_date } = req.body;
 
-    await pool.execute(
-      'UPDATE cards SET title = ?, description = ?, labels = ?, due_date = ? WHERE id = ?',
-      [title, description, JSON.stringify(labels || []), due_date, id]
-    );
+    const { data: updatedCard, error: updateError } = await supabase
+      .from('cards')
+      .update({
+        title,
+        description,
+        labels: labels || [],
+        due_date
+      })
+      .eq('id', id)
+      .select()
+      .single();
     
-    const [updatedCard] = await pool.execute('SELECT * FROM cards WHERE id = ?', [id]);
-    if (updatedCard.length === 0) {
-      return res.status(404).json({ error: 'Card not found' });
+    if (updateError) {
+      if (updateError.code === 'PGRST116') {
+        return res.status(404).json({ error: 'Card not found' });
+      }
+      throw updateError;
     }
 
-    res.json(updatedCard[0]);
+    res.json(updatedCard);
   } catch (error) {
     console.error('Error updating card:', error);
     res.status(500).json({ error: 'Failed to update card' });
@@ -55,13 +78,19 @@ router.put('/:id/move', async (req, res) => {
     const { id } = req.params;
     const { list_id, position } = req.body;
 
-    await pool.execute(
-      'UPDATE cards SET list_id = ?, position = ? WHERE id = ?',
-      [list_id, position, id]
-    );
+    const { data: updatedCard, error: updateError } = await supabase
+      .from('cards')
+      .update({
+        list_id,
+        position
+      })
+      .eq('id', id)
+      .select()
+      .single();
     
-    const [updatedCard] = await pool.execute('SELECT * FROM cards WHERE id = ?', [id]);
-    res.json(updatedCard[0]);
+    if (updateError) throw updateError;
+    
+    res.json(updatedCard);
   } catch (error) {
     console.error('Error moving card:', error);
     res.status(500).json({ error: 'Failed to move card' });
@@ -72,7 +101,13 @@ router.delete('/:id', async (req, res) => {
   try {
     const { id } = req.params;
     
-    await pool.execute('DELETE FROM cards WHERE id = ?', [id]);
+    const { error: deleteError } = await supabase
+      .from('cards')
+      .delete()
+      .eq('id', id);
+    
+    if (deleteError) throw deleteError;
+    
     res.status(204).send();
   } catch (error) {
     console.error('Error deleting card:', error);

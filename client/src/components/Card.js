@@ -5,17 +5,36 @@ import CardModal from './CardModal';
 
 const CardContainer = styled.div`
   background: white;
-  border-radius: 8px;
-  padding: 12px;
-  margin-bottom: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   cursor: pointer;
-  transition: all 0.2s ease;
-  border: 1px solid #e0e0e0;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  position: relative;
+  overflow: hidden;
+  
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #667eea, #764ba2);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
   
   &:hover {
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-    transform: translateY(-1px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
+    transform: translateY(-2px);
+    border-color: rgba(102, 126, 234, 0.2);
+    
+    &::before {
+      opacity: 1;
+    }
   }
 `;
 
@@ -45,13 +64,40 @@ const CardLabels = styled.div`
   margin-bottom: 8px;
 `;
 
+const getLabelColor = (label, index) => {
+  const colors = [
+    { bg: '#667eea', text: 'white' },
+    { bg: '#f093fb', text: 'white' },
+    { bg: '#4facfe', text: 'white' },
+    { bg: '#43e97b', text: 'white' },
+    { bg: '#fa709a', text: 'white' },
+    { bg: '#feca57', text: '#2c3e50' },
+    { bg: '#ff6b6b', text: 'white' },
+    { bg: '#1dd1a1', text: 'white' },
+  ];
+  
+  // Use label content to generate consistent color
+  const labelHash = label.split('').reduce((a, b) => {
+    a = ((a << 5) - a) + b.charCodeAt(0);
+    return a & a;
+  }, 0);
+  
+  return colors[Math.abs(labelHash) % colors.length];
+};
+
 const Label = styled.span`
-  background: #667eea;
-  color: white;
+  background: ${props => props.bgColor};
+  color: ${props => props.textColor};
   font-size: 0.75rem;
-  padding: 2px 8px;
-  border-radius: 12px;
+  padding: 4px 10px;
+  border-radius: 16px;
   font-weight: 500;
+  display: inline-block;
+  transition: transform 0.2s ease;
+  
+  &:hover {
+    transform: scale(1.05);
+  }
 `;
 
 const DueDate = styled.div`
@@ -90,9 +136,18 @@ const Card = ({ card, index, onUpdateCard, onDeleteCard }) => {
             )}
             {labels.length > 0 && (
               <CardLabels>
-                {labels.map((label, idx) => (
-                  <Label key={idx}>{label}</Label>
-                ))}
+                {labels.map((label, idx) => {
+                  const colors = getLabelColor(label, idx);
+                  return (
+                    <Label 
+                      key={idx} 
+                      bgColor={colors.bg} 
+                      textColor={colors.text}
+                    >
+                      {label}
+                    </Label>
+                  );
+                })}
               </CardLabels>
             )}
             {dueDate && <DueDate>Due: {dueDate}</DueDate>}

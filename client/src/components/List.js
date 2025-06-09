@@ -6,13 +6,19 @@ import AddCardForm from './AddCardForm';
 
 const ListContainer = styled.div`
   background: rgba(255, 255, 255, 0.95);
-  border-radius: 12px;
-  padding: 16px;
-  min-width: 300px;
-  max-width: 300px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border-radius: 16px;
+  padding: 20px;
+  min-width: 320px;
+  max-width: 320px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
   backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  transition: transform 0.2s ease;
+  
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 48px rgba(0, 0, 0, 0.15);
+  }
 `;
 
 const ListHeader = styled.div`
@@ -41,17 +47,22 @@ const ListTitle = styled.h3`
 `;
 
 const DeleteButton = styled.button`
-  background: #ff6b6b;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  padding: 6px 12px;
+  background: transparent;
+  color: #ff6b6b;
+  border: 1px solid #ff6b6b;
+  border-radius: 8px;
+  padding: 8px 14px;
   cursor: pointer;
-  font-size: 0.85rem;
-  transition: background 0.2s;
+  font-size: 0.8rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  opacity: 0.7;
   
   &:hover {
-    background: #ff5252;
+    background: #ff6b6b;
+    color: white;
+    opacity: 1;
+    transform: scale(1.02);
   }
 `;
 
