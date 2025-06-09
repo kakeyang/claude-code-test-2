@@ -64,12 +64,17 @@ trello-clone/
 # into your Supabase SQL editor and execute
 ```
 
-3. Update database credentials in `server/.env`:
+3. Update database credentials in `server/.env` (REQUIRED):
 ```env
 PORT=5000
-SUPABASE_URL=your_supabase_project_url
-SUPABASE_ANON_KEY=your_supabase_anon_key
+SUPABASE_URL=your_supabase_project_url  # Replace with your actual Supabase URL
+SUPABASE_ANON_KEY=your_supabase_anon_key  # Replace with your actual anon key
 ```
+
+**⚠️ Important**: You MUST replace the placeholder values with your actual Supabase credentials:
+- Get your `SUPABASE_URL` and `SUPABASE_ANON_KEY` from your Supabase project settings
+- Go to Settings > API in your Supabase dashboard
+- Copy the values and paste them into your `server/.env` file
 
 ### Installation
 
